@@ -1,18 +1,16 @@
 import time
 import random
 import argparse
-import undetected_chromedriver as uc
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.firefox import GeckoDriverManager
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.edge.service import Service as EdgeService  
 
 # Function to read URLs from a file
 def read_urls_from_file(file_path):
-    """
-    Reads a list of URLs from a text file, ignoring blank lines and comments.
-    :param file_path: Path to the file containing URLs
-    :return: List of URL strings
-    """
     urls = []
     try:
         with open(file_path, "r") as f:
@@ -26,7 +24,6 @@ def read_urls_from_file(file_path):
     return urls
 
 # Function to perform smooth, human-like scrolling
-# First 4 scroll actions are downward, remaining scrolls are upward
 def human_like_scroll(driver, min_duration=10, max_duration=20,
                       min_wait=0.5, max_wait=2,
                       min_step=5, max_step=20,
@@ -38,14 +35,11 @@ def human_like_scroll(driver, min_duration=10, max_duration=20,
 
     scroll_count = 0
     while time.time() < end_time:
-        # Determine scroll chunk size
         chunk = random.randint(100, int(page_height * 0.2))
-        # First 4 scrolls go down, then scrolls go up
         direction = 1 if scroll_count < 6 else random.choice([1, -1])
         target = max(0, min(page_height, current_pos + direction * chunk))
         distance = target - current_pos
 
-        # Break the distance into small, smooth steps
         step_size = random.randint(min_step, max_step)
         steps = max(1, int(abs(distance) / step_size))
         for _ in range(steps):
@@ -54,25 +48,37 @@ def human_like_scroll(driver, min_duration=10, max_duration=20,
 
         current_pos = target
         scroll_count += 1
-        # Pause briefly before next chunk
         time.sleep(random.uniform(min_wait, max_wait))
 
+# Create a WebDriver based on browser name
+def get_driver(browser_name):
+    if browser_name == "chrome":
+        options = webdriver.ChromeOptions()
+        return webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
 
-def main(urls_file):
-    # Read URLs from file
+    elif browser_name == "firefox":
+        options = webdriver.FirefoxOptions()
+        return webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
+
+    elif browser_name == "edge":
+        options = webdriver.EdgeOptions()
+        return webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()), options=options)
+
+    else:
+        raise ValueError(f"Unsupported browser: {browser_name}")
+
+def main(urls_file, browser):
     urls = read_urls_from_file(urls_file)
     if not urls:
         print("No URLs to visit. Please check the file path.")
         return
 
-    options = uc.ChromeOptions()
-    options.add_argument("--disable-features=HttpsUpgrades")
-    driver = uc.Chrome(options=options)
+    driver = get_driver(browser)
 
     try:
         for url in urls:
             print(f"Visiting: {url}")
-            driver.get(url, )
+            driver.get(url)
 
             # Click consent button if present
             try:
@@ -85,16 +91,16 @@ def main(urls_file):
                 pass
 
             human_like_scroll(driver)
-            
             time.sleep(random.uniform(1, 3))
     except Exception as e:
-        print(f"Error visiting {url}: {e}")
+        print(f"Error: {e}")
     finally:
         driver.quit()
 
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Randomly scroll a list of URLs from a file")
-    parser.add_argument('urls_file', help='Path to the text file containing URLs')
+    parser = argparse.ArgumentParser(description="Randomly scroll a list of URLs using a selected browser")
+    parser.add_argument("urls_file", help="Path to the text file containing URLs")
+    parser.add_argument("--browser", choices=["chrome", "firefox", "edge"], default="chrome",
+                        help="Browser to use (default: chrome)")
     args = parser.parse_args()
-    main(args.urls_file)
+    main(args.urls_file, args.browser)
