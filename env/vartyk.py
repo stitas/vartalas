@@ -4,10 +4,8 @@ import argparse
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
-from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium.webdriver.edge.service import Service as EdgeService  
 from selenium.webdriver.support.ui import WebDriverWait  
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -64,17 +62,13 @@ def get_driver(browser_name):
         options = webdriver.FirefoxOptions()
         return webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
 
-    elif browser_name == "edge":
-        options = webdriver.EdgeOptions()
-        return webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()), options=options)
-
     else:
-        raise ValueError(f"Unsupported browser: {browser_name}")
+        raise ValueError(f"Neteisingai parasei narsykles pavadinima: {browser_name}\nTuri but 'chrome' arba 'firefox'")
 
 def main(urls_file, browser):
     urls = read_urls_from_file(urls_file)
     if not urls:
-        print("No URLs to visit. Please check the file path.")
+        print(f"Neteisingai parasei puslapiu failo pavadinima: {urls_file}. Pataisyk ir bandyk is naujo")
         return
 
     driver = get_driver(browser)
@@ -90,7 +84,7 @@ def main(urls_file, browser):
                     EC.element_to_be_clickable((By.CSS_SELECTOR, ".fc-cta-consent"))
                 )
                 consent_btn.click()
-                print("Clicked consent button.")
+                print("Paspaustas sutikti su cookies mygtukas")
             except Exception as e:
                 print(f"Error: {e}")
 
@@ -102,9 +96,9 @@ def main(urls_file, browser):
         driver.quit()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Randomly scroll a list of URLs using a selected browser")
-    parser.add_argument("urls_file", help="Path to the text file containing URLs")
-    parser.add_argument("--browser", choices=["chrome", "firefox", "edge"], default="chrome",
-                        help="Browser to use (default: chrome)")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("urls_file", help="Url failo pavadinimas")
+    parser.add_argument("--browser", choices=["chrome", "firefox"], default="chrome",
+                        help="Kuri narsykle bus naudojama")
     args = parser.parse_args()
     main(args.urls_file, args.browser)
