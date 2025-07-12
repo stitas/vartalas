@@ -86,7 +86,7 @@ def main(urls_file, browser):
                 consent_btn.click()
                 print("Paspaustas sutikti su cookies mygtukas")
             except Exception as e:
-                print(f"Error: {e}")
+                pass
 
             human_like_scroll(driver)
             time.sleep(random.uniform(1, 3))
